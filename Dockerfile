@@ -1,9 +1,39 @@
 ARG PORT=443
-FROM cypress/browsers:latest
-RUN apt-get install python3 -y
-RUN echo $(python3 -m site --user-base)
+FROM python:3.10-slim
+
+# تثبيت الأدوات اللازمة والـ Chrome و ChromeDriver
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    unzip \
+    gnupg \
+    libglib2.0-0 \
+    libnss3 \
+    libgconf-2-4 \
+    libfontconfig1 \
+    libxss1 \
+    libappindicator1 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libu2f-udev \
+    xdg-utils \
+    chromium \
+    chromium-driver
+
+# إعداد متغيرات البيئة لـ Chrome
+ENV CHROME_BIN=/usr/bin/chromium
+ENV PATH="$PATH:/usr/lib/chromium/"
+
+# تثبيت بايثون و pip
+RUN apt-get install -y python3 python3-pip
+
+# نسخ ملف المتطلبات وتثبيت الحزم باستخدام pip
 COPY requirements.txt .
-ENV PATH /home/root/.local/bin:${PATH}
-RUN apt-get update && apt-get install -y python3-pip && pip install -r requirements.txt
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+
+# نسخ باقي الملفات إلى الحاوية
 COPY . .
-CMD uvicorn main:app --host 0.0.0.0 -port $PORT
+
+# تشغيل التطبيق باستخدام gunicorn بدلاً من uvicorn
+CMD ["gunicorn", "-b", "0.0.0.0:3000", "selenium_webapp:app"]
+
