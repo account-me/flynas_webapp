@@ -1,36 +1,9 @@
-FROM python:3.10-slim
-
-# تثبيت المتطلبات الأساسية
-RUN apt-get update && apt-get install -y \
-    wget \
-    unzip \
-    curl \
-    gnupg \
-    libglib2.0-0 \
-    libnss3 \
-    libgconf-2-4 \
-    libfontconfig1 \
-    libxss1 \
-    libappindicator1 \
-    libindicator7 \
-    fonts-liberation \
-    libatk-bridge2.0-0 \
-    libgtk-3-0 \
-    libu2f-udev \
-    xdg-utils \
-    chromium \
-    chromium-driver
-
-# ضبط كروم في المسار
-ENV CHROME_BIN=/usr/bin/chromium
-ENV PATH="$PATH:/usr/lib/chromium/"
-
-# نسخ الملفات
-WORKDIR /app
+ARG PORT=443
+FROM cypress/browsers:latest
+RUN apt-get install python3 -y
+RUN echo $(python3 -m site --user-base)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+ENV PATH /home/root/.local/bin:${PATH}
+RUN apt-get update && apt-get install -y python3-pip && pip install -r requirements.txt
 COPY . .
-
-# تشغيل التطبيق باستخدام gunicorn
-CMD gunicorn -b 0.0.0.0:3000 selenium_webapp:app
+CMD uvicorn main:app --host 0.0.0.0 -port $PORT
